@@ -67,6 +67,10 @@
             <h2>Budget pacing</h2>
             <select id="budget-select"></select>
           </div>
+          <div class="budget-compare-controls">
+            <label>Compare year<select id="budget-compare-year"></select></label>
+            <label id="budget-compare-month-label">Compare month<select id="budget-compare-month"></select></label>
+          </div>
           <div id="pacing-chart" class="chart"></div>
           <div class="legend">
             <span><i class="swatch paced"></i><b>Paced budget</b></span>
@@ -97,7 +101,6 @@
           <h2>Category mappings</h2>
           <div class="form-grid">
             <input id="mapping-name" placeholder="Aggregate category" />
-            <input id="mapping-budget" placeholder="Default yearly budget" />
           </div>
           <input id="mapping-original-name" type="hidden" />
           <div id="category-chips" class="chips"></div>
@@ -108,18 +111,29 @@
         <div class="panel">
           <h2>Budgets</h2>
           <div class="form-grid">
-            <select id="budget-category-type">
-              <option value="aggregate">Aggregate</option>
-              <option value="granular">Granular</option>
-            </select>
-            <select id="budget-category"></select>
-            <select id="budget-period">
-              <option value="yearly">Yearly</option>
-              <option value="monthly">Monthly</option>
-            </select>
-            <input id="budget-year" type="number" />
-            <input id="budget-month" type="number" min="1" max="12" value="1" />
-            <input id="budget-amount" placeholder="Amount" />
+            <input id="budget-id" type="hidden" />
+            <label>Category type
+              <select id="budget-category-type">
+                <option value="aggregate">Aggregate</option>
+                <option value="granular">Granular</option>
+              </select>
+            </label>
+            <label>Category
+              <select id="budget-category"></select>
+            </label>
+            <label>Period
+              <select id="budget-period">
+                <option value="yearly">Yearly</option>
+                <option value="monthly">Monthly</option>
+                <option value="one-time">One-time yearly</option>
+              </select>
+            </label>
+            <label>Year
+              <input id="budget-year" type="number" />
+            </label>
+            <label>Amount
+              <input id="budget-amount" placeholder="Amount" />
+            </label>
           </div>
           <button id="save-budget" class="primary">Add budget</button>
           <div id="budget-list" class="list"></div>

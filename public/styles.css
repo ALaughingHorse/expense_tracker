@@ -187,11 +187,16 @@ select {
 }
 
 .comparison-controls,
+.budget-compare-controls,
 .category-compare-controls {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 14px;
+}
+
+.budget-compare-controls {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .legend {
@@ -285,7 +290,15 @@ select {
 
 .work-grid {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr) minmax(0, 1fr);
-  align-items: start;
+  align-items: stretch;
+}
+
+.work-grid > .panel {
+  height: 560px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .form-grid {
@@ -352,6 +365,12 @@ select {
   margin-top: 14px;
 }
 
+.work-grid .list {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
 .list-row {
   display: grid;
   gap: 4px;
@@ -365,6 +384,11 @@ select {
 }
 
 .income-row {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.budget-row {
   grid-template-columns: 1fr auto;
   align-items: center;
 }
@@ -421,6 +445,7 @@ code {
   .topbar,
   .import-panel,
   .comparison-controls,
+  .budget-compare-controls,
   .category-compare-controls,
   .summary-grid,
   .dashboard-row,

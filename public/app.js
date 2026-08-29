@@ -15,6 +15,10 @@ let categoryCompare = {
   yearA: null,
   yearB: null,
 };
+let budgetCompare = {
+  year: null,
+  month: null,
+};
 
 const $ = (id) => document.getElementById(id);
 const money = (value) =>
@@ -40,6 +44,7 @@ async function refresh() {
   }
   applyDefaultComparisonYears();
   applyDefaultCategoryCompare();
+  applyDefaultBudgetCompare();
   render();
 }
 
@@ -62,6 +67,11 @@ function latestDateForMonth(year, month) {
   return state.transactions
     .filter((row) => row.date.startsWith(prefix))
     .reduce((latest, row) => (!latest || row.date > latest ? row.date : latest), "");
+}
+
+function latestMonth() {
+  const latest = latestDataDate();
+  return latest ? Number(latest.slice(5, 7)) : new Date().getMonth() + 1;
 }
 
 function categoryFor(row) {
@@ -100,11 +110,8 @@ function applyDefaultComparisonYears() {
   const years = availableYears();
   if (years.length === 0) return;
   const latest = years[0];
-  const previous = years.includes(latest - 1) ? latest - 1 : years[1] || latest - 1;
   comparisonYears.currentIncome ??= latest;
   comparisonYears.currentSpend ??= latest;
-  comparisonYears.lastIncome ??= previous;
-  comparisonYears.lastSpend ??= previous;
 }
 
 function applyDefaultCategoryCompare() {
@@ -123,6 +130,12 @@ function applyDefaultCategoryCompare() {
   if (!categoryCompare.category || !categories.includes(categoryCompare.category)) {
     categoryCompare.category = categories[0] || "";
   }
+}
+
+function applyDefaultBudgetCompare() {
+  const latest = latestDataDate();
+  budgetCompare.year ??= latest ? Number(latest.slice(0, 4)) : selectedYear;
+  budgetCompare.month ??= latest ? Number(latest.slice(5, 7)) : new Date().getMonth() + 1;
 }
 
 function daysInYear(year) {
@@ -228,32 +241,34 @@ function dayOfYear(value) {
 
 function pacingRows(budget) {
   if (!budget) return [];
+  const compareYear = Number(budgetCompare.year || budget.year);
+  const compareMonth = Number(budgetCompare.month || latestMonth());
   const rows = state.transactions
-    .filter((row) => row.type === "expense" && row.date.startsWith(`${budget.year}-`))
+    .filter((row) => row.type === "expense" && row.date.startsWith(`${compareYear}-`))
     .filter((row) => (budget.categoryType === "granular" ? row.granularCategory === budget.category : categoryFor(row) === budget.category))
-    .filter((row) => (budget.period === "yearly" ? true : Number(row.date.slice(5, 7)) === Number(budget.month)));
+    .filter((row) => (budget.period === "monthly" ? Number(row.date.slice(5, 7)) === compareMonth : true));
 
-  const days = budget.period === "yearly" ? 365 : new Date(Number(budget.year), Number(budget.month), 0).getDate();
+  const days = budget.period === "monthly" ? new Date(compareYear, compareMonth, 0).getDate() : daysInYear(compareYear);
   const byDay = new Map();
   rows.forEach((row) => {
-    const key = budget.period === "yearly" ? dayOfYear(row.date) : Number(row.date.slice(8, 10));
+    const key = budget.period === "monthly" ? Number(row.date.slice(8, 10)) : dayOfYear(row.date);
     byDay.set(key, (byDay.get(key) || 0) + Number(row.amount));
   });
 
   let actual = 0;
   const latestDate =
-    budget.period === "yearly"
-      ? latestDateForYear(Number(budget.year))
-      : latestDateForMonth(Number(budget.year), Number(budget.month));
+    budget.period === "monthly"
+      ? latestDateForMonth(compareYear, compareMonth)
+      : latestDateForYear(compareYear);
   const lastActualDay =
-    !latestDate ? 0 : budget.period === "yearly" ? dayOfYear(latestDate) : Number(latestDate.slice(8, 10));
+    !latestDate ? 0 : budget.period === "monthly" ? Number(latestDate.slice(8, 10)) : dayOfYear(latestDate);
   return Array.from({ length: days }, (_, index) => {
     const day = index + 1;
     actual += byDay.get(day) || 0;
     return {
-      label: budget.period === "yearly" ? String(day) : String(day).padStart(2, "0"),
+      label: budget.period === "monthly" ? String(day).padStart(2, "0") : String(day),
       actual: day <= lastActualDay ? actual : undefined,
-      paced: (Number(budget.amount) * day) / days,
+      paced: budget.period === "one-time" ? Number(budget.amount) : (Number(budget.amount) * day) / days,
     };
   });
 }
@@ -410,7 +425,6 @@ function renderMappings() {
           <div>
             <strong>${mapping.aggregateCategory}</strong>
             <span>${mapping.granularCategories.join(", ")}</span>
-            ${mapping.budget ? `<span>Default yearly budget: ${money(mapping.budget)}</span>` : ""}
           </div>
           <div class="row-actions">
             <button title="Edit mapping" data-edit-mapping="${mapping.aggregateCategory}">Edit</button>
@@ -422,12 +436,7 @@ function renderMappings() {
 }
 
 function renderBudgets() {
-  const aggregateCategories = state.mappings.map((mapping) => mapping.aggregateCategory);
-  const categoryOptions = ($("budget-category-type").value === "aggregate" ? aggregateCategories : state.granularCategories)
-    .map((category) => `<option value="${category}">${category}</option>`)
-    .join("");
-  $("budget-category").innerHTML = `<option value="">Category</option>${categoryOptions}`;
-  $("budget-month").style.display = $("budget-period").value === "monthly" ? "block" : "none";
+  renderBudgetCategoryOptions();
 
   $("budget-select").innerHTML =
     state.budgets.length === 0
@@ -437,6 +446,7 @@ function renderBudgets() {
   $("budget-select").value = selectedBudgetId;
 
   const selected = state.budgets.find((budget) => budget.id === selectedBudgetId) || state.budgets[0];
+  renderBudgetCompareControls(selected);
   renderLineChart($("pacing-chart"), pacingRows(selected), [
     { key: "paced", name: "Paced budget", color: "#5f7f45" },
     { key: "actual", name: "Actual spend", color: "#b24a3b" },
@@ -444,10 +454,43 @@ function renderBudgets() {
 
   $("budget-list").innerHTML = state.budgets
     .map(
-      (budget) =>
-        `<div class="list-row"><strong>${budget.category}</strong><span>${budget.year}${budget.month ? `-${String(budget.month).padStart(2, "0")}` : ""} · ${budget.period} · ${money(budget.amount)}</span></div>`
+      (budget) => {
+        const periodLabel = budget.period === "monthly" ? "monthly recurring" : budget.period;
+        return `<div class="list-row budget-row">
+          <div><strong>${budget.category}</strong><span>${budget.year} · ${periodLabel} · ${money(budget.amount)}</span></div>
+          <div class="row-actions">
+            <button title="Edit budget" data-edit-budget="${budget.id}">Edit</button>
+            <button title="Delete budget" data-delete-budget="${budget.id}">Delete</button>
+          </div>
+        </div>`;
+      }
     )
     .join("");
+}
+
+function renderBudgetCategoryOptions() {
+  const aggregateCategories = state.mappings.map((mapping) => mapping.aggregateCategory);
+  const categoryOptions = ($("budget-category-type").value === "aggregate" ? aggregateCategories : state.granularCategories)
+    .map((category) => `<option value="${category}">${category}</option>`)
+    .join("");
+  $("budget-category").innerHTML = `<option value="">Category</option>${categoryOptions}`;
+}
+
+function renderBudgetCompareControls(selectedBudget) {
+  const years = availableYears();
+  const selectedYearOption = budgetCompare.year && !years.includes(Number(budgetCompare.year)) ? [Number(budgetCompare.year)] : [];
+  const yearOptions = [...selectedYearOption, ...years]
+    .map((year) => `<option value="${year}">${year}</option>`)
+    .join("");
+  $("budget-compare-year").innerHTML = yearOptions || `<option value="${selectedYear}">${selectedYear}</option>`;
+  $("budget-compare-year").value = budgetCompare.year || selectedYear;
+
+  $("budget-compare-month").innerHTML = Array.from({ length: 12 }, (_, index) => {
+    const month = index + 1;
+    return `<option value="${month}">${String(month).padStart(2, "0")}</option>`;
+  }).join("");
+  $("budget-compare-month").value = budgetCompare.month || new Date().getMonth() + 1;
+  $("budget-compare-month-label").style.display = selectedBudget?.period === "monthly" ? "grid" : "none";
 }
 
 function renderIncome() {
@@ -473,43 +516,17 @@ async function saveMapping() {
   const name = $("mapping-name").value.trim();
   if (!name || selectedCategories.size === 0) return;
   const originalName = $("mapping-original-name").value.trim();
-  const defaultBudget = $("mapping-budget").value ? Number($("mapping-budget").value) : undefined;
   const next = [
     ...state.mappings.filter((mapping) => mapping.aggregateCategory !== name && mapping.aggregateCategory !== originalName),
     {
       id: name.toLowerCase().replace(/\s+/g, "-"),
       aggregateCategory: name,
       granularCategories: [...selectedCategories],
-      budget: defaultBudget,
     },
   ];
   await api("/api/mappings", { method: "PUT", body: JSON.stringify(next) });
-  if (defaultBudget) {
-    const budgetRows = [
-      ...state.budgets.filter(
-        (budget) =>
-          !(
-            budget.categoryType === "aggregate" &&
-            budget.category === name &&
-            budget.period === "yearly" &&
-            Number(budget.year) === selectedYear
-          )
-      ),
-      {
-        id: crypto.randomUUID(),
-        categoryType: "aggregate",
-        category: name,
-        period: "yearly",
-        year: selectedYear,
-        amount: defaultBudget,
-      },
-    ];
-    await api("/api/budgets", { method: "PUT", body: JSON.stringify(budgetRows) });
-    selectedBudgetId = budgetRows.at(-1).id;
-  }
   $("mapping-original-name").value = "";
   $("mapping-name").value = "";
-  $("mapping-budget").value = "";
   $("save-mapping").textContent = "Save mapping";
   selectedCategories = new Set();
   await refresh();
@@ -521,7 +538,6 @@ async function deleteMapping(name) {
   if ($("mapping-original-name").value === name) {
     $("mapping-original-name").value = "";
     $("mapping-name").value = "";
-    $("mapping-budget").value = "";
     $("save-mapping").textContent = "Save mapping";
     selectedCategories = new Set();
   }
@@ -533,7 +549,6 @@ function editMapping(name) {
   if (!mapping) return;
   $("mapping-original-name").value = mapping.aggregateCategory;
   $("mapping-name").value = mapping.aggregateCategory;
-  $("mapping-budget").value = mapping.budget || "";
   $("save-mapping").textContent = "Save changes";
   selectedCategories = new Set(mapping.granularCategories);
   renderMappings();
@@ -543,21 +558,53 @@ async function saveBudget() {
   const amount = Number($("budget-amount").value);
   const category = $("budget-category").value;
   if (!amount || !category) return;
+  const budgetId = $("budget-id").value || crypto.randomUUID();
   const next = [
-    ...state.budgets,
+    ...state.budgets.filter((budget) => budget.id !== budgetId),
     {
-      id: crypto.randomUUID(),
+      id: budgetId,
       categoryType: $("budget-category-type").value,
       category,
       period: $("budget-period").value,
       year: Number($("budget-year").value),
-      month: $("budget-period").value === "monthly" ? Number($("budget-month").value) : undefined,
       amount,
     },
   ];
   await api("/api/budgets", { method: "PUT", body: JSON.stringify(next) });
+  selectedBudgetId = budgetId;
+  $("budget-id").value = "";
   $("budget-amount").value = "";
+  $("save-budget").textContent = "Add budget";
   await refresh();
+}
+
+async function deleteBudget(id) {
+  const next = state.budgets.filter((budget) => budget.id !== id);
+  await api("/api/budgets", { method: "PUT", body: JSON.stringify(next) });
+  if (selectedBudgetId === id) {
+    selectedBudgetId = next[0]?.id || "";
+  }
+  if ($("budget-id").value === id) {
+    $("budget-id").value = "";
+    $("budget-amount").value = "";
+    $("save-budget").textContent = "Add budget";
+  }
+  await refresh();
+}
+
+function editBudget(id) {
+  const budget = state.budgets.find((item) => item.id === id);
+  if (!budget) return;
+  $("budget-id").value = budget.id;
+  $("budget-category-type").value = budget.categoryType;
+  renderBudgetCategoryOptions();
+  $("budget-category").value = budget.category;
+  $("budget-period").value = budget.period;
+  $("budget-year").value = budget.year;
+  $("budget-amount").value = budget.amount;
+  $("save-budget").textContent = "Save budget";
+  selectedBudgetId = budget.id;
+  renderBudgets();
 }
 
 async function saveIncome() {
@@ -637,6 +684,17 @@ function wireEvents() {
     }
   });
 
+  $("budget-list").addEventListener("click", async (event) => {
+    const editButton = event.target.closest("[data-edit-budget]");
+    const deleteButton = event.target.closest("[data-delete-budget]");
+    if (editButton) {
+      editBudget(editButton.dataset.editBudget);
+    }
+    if (deleteButton) {
+      await deleteBudget(deleteButton.dataset.deleteBudget);
+    }
+  });
+
   $("income-list").addEventListener("click", async (event) => {
     const deleteButton = event.target.closest("[data-delete-income]");
     const editButton = event.target.closest("[data-edit-income]");
@@ -687,6 +745,14 @@ function wireEvents() {
   });
   $("budget-select").addEventListener("change", () => {
     selectedBudgetId = $("budget-select").value;
+    render();
+  });
+  $("budget-compare-year").addEventListener("change", () => {
+    budgetCompare.year = Number($("budget-compare-year").value);
+    render();
+  });
+  $("budget-compare-month").addEventListener("change", () => {
+    budgetCompare.month = Number($("budget-compare-month").value);
     render();
   });
   $("budget-category-type").addEventListener("change", renderBudgets);
