@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <div>
+          <h1>Expense Tracker</h1>
+          <p>Local budgeting dashboard backed by ignored files in this repo.</p>
+        </div>
+        <label>
+          Year
+          <input id="year-input" type="number" />
+        </label>
+      </header>
+
+      <section class="summary-grid">
+        <div class="metric"><span>YTD income</span><strong id="metric-income">$0</strong></div>
+        <div class="metric"><span>YTD spend</span><strong id="metric-spend">$0</strong></div>
+        <div class="metric"><span>Net</span><strong id="metric-net">$0</strong></div>
+        <div class="metric"><span>Transactions</span><strong id="metric-count">0</strong></div>
+        <div class="metric"><span>Latest data</span><strong id="metric-latest-data">NULL</strong></div>
+      </section>
+
+      <section class="dashboard-row top-dashboard-row">
+        <section class="panel import-panel">
+          <div>
+            <h2>Import Sharkapp export</h2>
+            <p>Drop the UTF-16 tab-delimited export. Rows are normalized and de-duplicated before storage.</p>
+          </div>
+          <div id="dropzone" class="dropzone">
+            <span class="icon">⬆</span>
+            <span>Drop CSV</span>
+          </div>
+          <button id="import-local" class="secondary">Import local_data</button>
+          <div id="status" class="status"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Year over year</h2>
+          </div>
+          <div class="comparison-controls">
+            <label>Income A<select id="comparison-current-income"></select></label>
+            <label>Income B<select id="comparison-last-income"></select></label>
+            <label>Expense A<select id="comparison-current-spend"></select></label>
+            <label>Expense B<select id="comparison-last-spend"></select></label>
+          </div>
+          <div id="comparison-chart" class="chart"></div>
+          <div class="legend">
+            <span><i class="swatch income-current"></i><b id="label-current-income"></b></span>
+            <span><i class="swatch income-last"></i><b id="label-last-income"></b></span>
+            <span><i class="swatch spend-current"></i><b id="label-current-spend"></b></span>
+            <span><i class="swatch spend-last"></i><b id="label-last-spend"></b></span>
+          </div>
+        </section>
+      </section>
+
+      <section class="dashboard-row second-dashboard-row">
+        <section class="panel">
+          <div class="panel-title-row">
+            <h2>Budget pacing</h2>
+            <select id="budget-select"></select>
+          </div>
+          <div id="pacing-chart" class="chart"></div>
+          <div class="legend">
+            <span><i class="swatch paced"></i><b>Paced budget</b></span>
+            <span><i class="swatch actual"></i><b>Actual spend</b></span>
+          </div>
+        </section>
+
+        <section class="panel category-compare-panel">
+          <div class="panel-title-row">
+            <h2>Y/Y expense by category</h2>
+          </div>
+          <div class="category-compare-controls">
+            <label>Category type<select id="category-compare-type"></select></label>
+            <label>Category<select id="category-compare-category"></select></label>
+            <label>Year A<select id="category-compare-year-a"></select></label>
+            <label>Year B<select id="category-compare-year-b"></select></label>
+          </div>
+          <div id="category-compare-chart" class="chart"></div>
+          <div class="legend">
+            <span><i class="swatch category-a"></i><b id="label-category-year-a"></b></span>
+            <span><i class="swatch category-b"></i><b id="label-category-year-b"></b></span>
+          </div>
+        </section>
+      </section>
+
+      <section class="work-grid">
+        <div class="panel">
+          <h2>Category mappings</h2>
+          <div class="form-grid">
+            <input id="mapping-name" placeholder="Aggregate category" />
+            <input id="mapping-budget" placeholder="Default yearly budget" />
+          </div>
+          <input id="mapping-original-name" type="hidden" />
+          <div id="category-chips" class="chips"></div>
+          <button id="save-mapping" class="primary">Save mapping</button>
+          <div id="mapping-list" class="list"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Budgets</h2>
+          <div class="form-grid">
+            <select id="budget-category-type">
+              <option value="aggregate">Aggregate</option>
+              <option value="granular">Granular</option>
+            </select>
+            <select id="budget-category"></select>
+            <select id="budget-period">
+              <option value="yearly">Yearly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <input id="budget-year" type="number" />
+            <input id="budget-month" type="number" min="1" max="12" value="1" />
+            <input id="budget-amount" placeholder="Amount" />
+          </div>
+          <button id="save-budget" class="primary">Add budget</button>
+          <div id="budget-list" class="list"></div>
+        </div>
+
+        <div class="panel income-panel">
+          <h2>Income</h2>
+          <div class="form-grid">
+            <input id="income-id" type="hidden" />
+            <input id="income-date" type="date" />
+            <input id="income-amount" placeholder="Amount" />
+            <input id="income-category" placeholder="Category" value="工资" />
+            <input id="income-note" placeholder="Note" />
+          </div>
+          <button id="save-income" class="primary">Add income</button>
+          <div id="income-list" class="list"></div>
+        </div>
+      </section>
+
+      <footer>Data is stored under ignored local files in <code>app_data/</code>.</footer>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

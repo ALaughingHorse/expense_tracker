@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.DS_Store
+__pycache__/
+*.py[cod]
+
+# Private financial data
+app_data/
+local_data/*.csv
+local_data/*.tsv
+local_data/*.xlsx
+local_data/*.xls
