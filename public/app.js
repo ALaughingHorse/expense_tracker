@@ -46,6 +46,7 @@ async function refresh() {
   applyDefaultCategoryCompare();
   applyDefaultBudgetCompare();
   render();
+  refreshChatStatus();
 }
 
 function availableYears() {

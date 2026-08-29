@@ -6,6 +6,8 @@ __pycache__/
 
 # Private financial data
 app_data/
+OPENAI_API_KEY.txt
+.env
 local_data/*.csv
 local_data/*.tsv
 local_data/*.xlsx

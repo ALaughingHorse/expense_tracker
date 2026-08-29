@@ -86,7 +86,8 @@
   - Added edit and delete controls for existing category budgets. Editing repopulates the budget form and saving replaces the existing budget row.
   - Made the bottom management panels equal height and made their list/data areas scroll internally, so the income widget no longer grows taller than the neighboring panels.
   - Added edit and delete controls for existing category mappings. Editing repopulates the mapping form and selected granular category chips; deleting removes the mapping from `category_mappings.json`.
-- Updated the income section so all income rows can be edited or deleted, including imported Sharkapp income rows. Edits preserve existing source/account metadata where possible.
+  - Updated the income section so all income rows can be edited or deleted, including imported Sharkapp income rows. Edits preserve existing source/account metadata where possible.
+  - Removed the in-app assistant/chatbot section and removed OpenAI API calls from the local server.
 
 ## Current Run Command
 
