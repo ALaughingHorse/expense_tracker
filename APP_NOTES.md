@@ -1,5 +1,6 @@
 # Expense Tracker Notes
 
+
 ## User Goals And Feedback
 
 - Build a personal expense tracking and budgeting app to monitor financial health after a recent home purchase.
@@ -88,6 +89,7 @@
   - Added edit and delete controls for existing category mappings. Editing repopulates the mapping form and selected granular category chips; deleting removes the mapping from `category_mappings.json`.
   - Updated the income section so all income rows can be edited or deleted, including imported Sharkapp income rows. Edits preserve existing source/account metadata where possible.
   - Removed the in-app assistant/chatbot section and removed OpenAI API calls from the local server.
+  - Added RSU vest post-tax income entries to the local transaction database with category `RSU` and note `RSU vest post tax`.
 
 ## Current Run Command
 
