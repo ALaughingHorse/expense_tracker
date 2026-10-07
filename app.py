@@ -37,6 +37,26 @@ def write_json(path: Path, value) -> None:
         json.dump(value, handle, ensure_ascii=False, indent=2)
 
 
+def validate_mappings(mappings) -> list[dict]:
+    if not isinstance(mappings, list):
+        raise ValueError("Mappings must be a list.")
+
+    owners = {}
+    for mapping in mappings:
+        aggregate = mapping.get("aggregateCategory", "").strip()
+        granular_categories = mapping.get("granularCategories", [])
+        if not aggregate or not isinstance(granular_categories, list) or not granular_categories:
+            raise ValueError("Each mapping must have a name and at least one granular category.")
+        for granular in granular_categories:
+            if granular in owners:
+                raise ValueError(
+                    f'Granular category "{granular}" is assigned to both '
+                    f'"{owners[granular]}" and "{aggregate}".'
+                )
+            owners[granular] = aggregate
+    return mappings
+
+
 def read_transactions() -> list[dict]:
     if not TRANSACTIONS.exists():
         return []
@@ -212,7 +232,7 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             payload = self.read_json_body()
             if self.path == "/api/mappings":
-                write_json(MAPPINGS, payload)
+                write_json(MAPPINGS, validate_mappings(payload))
                 self.send_json(payload)
                 return
             if self.path == "/api/budgets":

@@ -517,8 +517,16 @@ async function saveMapping() {
   const name = $("mapping-name").value.trim();
   if (!name || selectedCategories.size === 0) return;
   const originalName = $("mapping-original-name").value.trim();
+  const reassignedCategories = new Set(selectedCategories);
+  const remainingMappings = state.mappings
+    .filter((mapping) => mapping.aggregateCategory !== name && mapping.aggregateCategory !== originalName)
+    .map((mapping) => ({
+      ...mapping,
+      granularCategories: mapping.granularCategories.filter((category) => !reassignedCategories.has(category)),
+    }))
+    .filter((mapping) => mapping.granularCategories.length > 0);
   const next = [
-    ...state.mappings.filter((mapping) => mapping.aggregateCategory !== name && mapping.aggregateCategory !== originalName),
+    ...remainingMappings,
     {
       id: name.toLowerCase().replace(/\s+/g, "-"),
       aggregateCategory: name,
