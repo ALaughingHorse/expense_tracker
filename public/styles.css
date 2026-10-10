@@ -168,6 +168,65 @@ select {
   position: relative;
 }
 
+.budget-chart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.budget-chart-layout.with-budget-balance {
+  grid-template-columns: minmax(0, 1fr) 182px;
+}
+
+.budget-balance {
+  padding: 16px;
+  border: 1px solid #dce3df;
+  border-radius: 8px;
+  background: #f8fbfa;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.budget-balance[hidden] {
+  display: none;
+}
+
+.budget-balance h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.balance-item {
+  display: grid;
+  gap: 7px;
+  padding: 12px 0;
+  border-top: 1px solid #dce3df;
+}
+
+.balance-item > strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.balance-item > span,
+.balance-item > small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.balance-item > b {
+  display: block;
+  font-size: 20px;
+  line-height: 1.1;
+  color: #26734d;
+  overflow-wrap: anywhere;
+}
+
+.balance-item > b.deficit {
+  color: #b24a3b;
+}
+
 .chart svg {
   display: block;
   width: 100%;
@@ -431,8 +490,16 @@ code {
     grid-template-columns: minmax(260px, 0.65fr) minmax(0, 1fr);
   }
 
+  .second-dashboard-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .income-panel {
     grid-column: 1 / -1;
+  }
+
+  .budget-chart-layout.with-budget-balance {
+    grid-template-columns: minmax(0, 1fr) 220px;
   }
 }
 
@@ -461,5 +528,13 @@ code {
 
   .chart {
     height: 300px;
+  }
+
+  .budget-chart-layout.with-budget-balance {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .budget-chart-layout.with-budget-balance .budget-balance {
+    grid-row: 1;
   }
 }

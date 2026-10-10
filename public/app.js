@@ -23,6 +23,8 @@ let budgetCompare = {
 const $ = (id) => document.getElementById(id);
 const money = (value) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value || 0);
+const moneyExact = (value) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 
 async function api(url, options = {}) {
   const response = await fetch(url, {
@@ -46,7 +48,6 @@ async function refresh() {
   applyDefaultCategoryCompare();
   applyDefaultBudgetCompare();
   render();
-  refreshChatStatus();
 }
 
 function availableYears() {
@@ -235,9 +236,8 @@ function categoryCompareRows() {
 }
 
 function dayOfYear(value) {
-  const current = new Date(`${value}T00:00:00`);
-  const start = new Date(current.getFullYear(), 0, 0);
-  return Math.floor((current - start) / 86400000);
+  const [year, month, day] = value.split("-").map(Number);
+  return Math.floor((Date.UTC(year, month - 1, day) - Date.UTC(year, 0, 0)) / 86400000);
 }
 
 function pacingRows(budget) {
@@ -272,6 +272,36 @@ function pacingRows(budget) {
       paced: budget.period === "one-time" ? Number(budget.amount) : (Number(budget.amount) * day) / days,
     };
   });
+}
+
+function renderBudgetBalance(budget, pacing) {
+  const card = $("budget-balance");
+  card.hidden = !budget;
+  $("budget-chart-layout").classList.toggle("with-budget-balance", Boolean(budget));
+  if (card.hidden) return;
+
+  $("budget-balance-category").textContent = budget.category;
+  const year = Number(budgetCompare.year || budget.year);
+  const month = Number(budgetCompare.month || latestMonth());
+  const latestDate = budget.period === "monthly" ? latestDateForMonth(year, month) : latestDateForYear(year);
+  const latestPoint = pacing.slice().reverse().find((row) => row.actual !== undefined);
+  const amount = $("budget-balance-amount");
+  const details = $("budget-balance-details");
+  $("budget-balance-period").textContent = latestDate ? `Through ${latestDate}` : budget.period === "monthly"
+    ? `${year}-${String(month).padStart(2, "0")}` : String(year);
+  amount.classList.toggle("deficit", Boolean(latestPoint && latestPoint.actual > latestPoint.paced));
+  if (!latestPoint) {
+    amount.textContent = "No data yet";
+    details.textContent = "No transactions recorded for this period";
+    return;
+  }
+
+  const balance = latestPoint.paced - latestPoint.actual;
+  const label = budget.period === "one-time"
+    ? balance < 0 ? "Over budget" : "Remaining"
+    : `${budget.period === "monthly" ? "MTD" : "YTD"} ${balance < 0 ? "deficit" : "surplus"}`;
+  amount.textContent = `${label} ${moneyExact(Math.abs(balance))}`;
+  details.textContent = `${moneyExact(latestPoint.paced)} ${budget.period === "one-time" ? "budget" : "paced budget"} − ${moneyExact(latestPoint.actual)} spent`;
 }
 
 function renderLineChart(container, rows, series) {
@@ -443,12 +473,16 @@ function renderBudgets() {
     state.budgets.length === 0
       ? `<option value="">No budgets</option>`
       : state.budgets.map((budget) => `<option value="${budget.id}">${budget.category} ${budget.period}</option>`).join("");
-  if (!selectedBudgetId && state.budgets[0]) selectedBudgetId = state.budgets[0].id;
+  if (!selectedBudgetId && state.budgets.length) {
+    selectedBudgetId = (state.budgets.find((budget) => budget.period === "monthly") || state.budgets[0]).id;
+  }
   $("budget-select").value = selectedBudgetId;
 
   const selected = state.budgets.find((budget) => budget.id === selectedBudgetId) || state.budgets[0];
   renderBudgetCompareControls(selected);
-  renderLineChart($("pacing-chart"), pacingRows(selected), [
+  const pacing = pacingRows(selected);
+  renderBudgetBalance(selected, pacing);
+  renderLineChart($("pacing-chart"), pacing, [
     { key: "paced", name: "Paced budget", color: "#5f7f45" },
     { key: "actual", name: "Actual spend", color: "#b24a3b" },
   ]);

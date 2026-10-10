@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Expense Tracker</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=20261010-balance" />
   </head>
   <body>
     <main>
@@ -71,7 +71,18 @@
             <label>Compare year<select id="budget-compare-year"></select></label>
             <label id="budget-compare-month-label">Compare month<select id="budget-compare-month"></select></label>
           </div>
-          <div id="pacing-chart" class="chart"></div>
+          <div id="budget-chart-layout" class="budget-chart-layout">
+            <div id="pacing-chart" class="chart"></div>
+            <aside id="budget-balance" class="budget-balance" aria-live="polite">
+              <h3>Budget balance</h3>
+              <div class="balance-item">
+                <strong id="budget-balance-category"></strong>
+                <span id="budget-balance-period"></span>
+                <b id="budget-balance-amount"></b>
+                <small id="budget-balance-details"></small>
+              </div>
+            </aside>
+          </div>
           <div class="legend">
             <span><i class="swatch paced"></i><b>Paced budget</b></span>
             <span><i class="swatch actual"></i><b>Actual spend</b></span>
@@ -155,6 +166,6 @@
 
       <footer>Data is stored under ignored local files in <code>app_data/</code>.</footer>
     </main>
-    <script src="/app.js"></script>
+    <script src="/app.js?v=20261010-balance"></script>
   </body>
 </html>
